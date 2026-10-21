@@ -4,6 +4,7 @@
 /*
  * dp-dump - discover and decode the datapoints of a local Tuya device.
  *
+ *   ecozy-tuya-dump --scan [--seconds <n>]
  *   ecozy-tuya-dump [--config <path>] [--device <name|index>]
  *                   [--id <id> --key <key>] [--ip <ip>] [--version <3.4>]
  *                   [--seconds <n>] [--once] [--json <file>]
@@ -42,6 +43,7 @@ function parseArgs(argv) {
       case '--seconds': args.seconds = Number(next()); break;
       case '--json': args.json = next(); break;
       case '--once': args.once = true; break;
+      case '--scan': args.scan = true; break;
       case '--help': case '-h': args.help = true; break;
       default: break;
     }
@@ -122,6 +124,22 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help) {
     console.log(fs.readFileSync(__filename, 'utf8').split('\n').slice(3, 24).join('\n'));
+    return;
+  }
+
+  if (args.scan) {
+    const { scan } = require('../src/scan');
+    const secs = Math.max(2, Number(args.seconds) || 15);
+    console.log(`Listening for Tuya device announcements for ${secs}s...`);
+    const devices = await scan(secs);
+    if (!devices.length) {
+      console.log('No devices heard. Check the device is powered, on this LAN, and not already connected to something else.');
+      return;
+    }
+    for (const d of devices) {
+      console.log(`  id ${d.id}  ip ${d.ip || '?'}${d.version ? `  protocol ${d.version}` : ''}`);
+    }
+    console.log('\nThe local key is never broadcast - get it from the Tuya IoT platform (see the README).');
     return;
   }
 

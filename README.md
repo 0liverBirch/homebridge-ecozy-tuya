@@ -28,7 +28,13 @@ From the Homebridge UI: Plugins → search **homebridge-ecozy-tuya** → Install
 npm install -g homebridge-ecozy-tuya
 ```
 
-Then add the config below (or use the settings page) and restart Homebridge.
+Then restart Homebridge and open the plugin's settings page.
+
+## First setup (finding your clock)
+
+1. Open the plugin's settings in the Homebridge UI and press **Scan for devices**. Tuya devices announce their **device ID** and **IP address** on the local network; the scan listens for about 12 seconds and lists what it hears. Pick yours and the form fills in. (The same scan exists offline as `ecozy-tuya-dump --scan`.)
+2. Get the clock's **local key** from the Tuya IoT platform (below). The key is never broadcast and cannot be scanned for; that is Tuya's design.
+3. Paste the key into the form, save, and restart Homebridge. The clock appears in HomeKit, and the alarm editor appears in the same settings page.
 
 ## Configuration
 
@@ -76,6 +82,7 @@ The config's datapoint mapping is specific to the E80S. For a different Tuya dev
 ```bash
 # from the machine running Homebridge, with Homebridge stopped
 cd /var/lib/homebridge
+./node_modules/.bin/ecozy-tuya-dump --scan         # list Tuya devices on the LAN (ID + IP), nothing else needed
 ./node_modules/.bin/ecozy-tuya-dump                # reads your Homebridge config automatically
 ./node_modules/.bin/ecozy-tuya-dump --once         # one snapshot, no watching
 ./node_modules/.bin/ecozy-tuya-dump --id <id> --key <localKey> --ip <ip> --version 3.4

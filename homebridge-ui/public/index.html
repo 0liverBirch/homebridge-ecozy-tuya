@@ -18,6 +18,13 @@
 </head>
 <body>
 
+<h2>Find your clock</h2>
+<p class="note">New here? Scan your network first: Tuya devices announce their ID and IP address
+(the scan takes about 12 seconds). You will still need the clock's <strong>local key</strong> from the
+Tuya IoT platform - it is never broadcast. Once you have both, fill in the device form below and save.</p>
+<button class="primary" id="scan" style="margin-top:0">Scan for devices</button><span id="scan-status"></span>
+<div id="scan-results" style="margin-top:10px; font-size:14px"></div>
+
 <h2>Device</h2>
 <p class="note">Your clock's details live here, in the Homebridge config, and nowhere else.
 The device ID and local key never leave this page. Services for the device are edited in the
@@ -85,6 +92,44 @@ async function init() {
     document.getElementById('saved').textContent = `Could not load config: ${e.message}`;
   }
 }
+
+document.getElementById('scan').onclick = async () => {
+  const status = document.getElementById('scan-status');
+  const results = document.getElementById('scan-results');
+  const port = Number(document.getElementById('f-uiport').value) || DEFAULT_PORT;
+  status.textContent = ' Scanning…';
+  results.innerHTML = '';
+  try {
+    const r = await fetch(`http://${window.location.hostname}:${port}/api/scan`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    status.textContent = '';
+    if (!data.devices || !data.devices.length) {
+      results.textContent = 'No devices heard. Check the clock is powered and on this network, then scan again.';
+      return;
+    }
+    for (const d of data.devices) {
+      const row = document.createElement('div');
+      row.style.margin = '6px 0';
+      const label = document.createElement('span');
+      label.textContent = `ID ${d.id} · IP ${d.ip || '?'}${d.version ? ` · protocol ${d.version}` : ''} `;
+      const use = document.createElement('button');
+      use.textContent = 'Use this device';
+      use.onclick = () => {
+        document.getElementById('f-id').value = d.id;
+        if (d.ip) document.getElementById('f-ip').value = d.ip;
+        if (d.version) document.getElementById('f-version').value = d.version;
+        document.getElementById('f-name').scrollIntoView({ behavior: 'smooth' });
+      };
+      row.appendChild(label);
+      row.appendChild(use);
+      results.appendChild(row);
+    }
+  } catch (e) {
+    status.textContent = '';
+    results.textContent = 'Could not reach the plugin to scan. Install the plugin and restart Homebridge, then try again.';
+  }
+};
 
 document.getElementById('save').onclick = async () => {
   if (!hb || !configBlock || !device) return;

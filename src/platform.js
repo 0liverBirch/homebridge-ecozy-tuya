@@ -95,11 +95,12 @@ class EcozyTuyaPlatform {
       }
     }
 
-    // Alarm editor: served by the plugin itself, through the same device
-    // connections (the clock only allows one). It is also embedded in the
-    // plugin's Homebridge settings page. Set "uiPort": 0 to disable.
+    // Alarm editor and device discovery: served by the plugin itself.
+    // Runs even with no devices configured, so a brand-new user can scan
+    // for their clock from the settings page before entering anything.
+    // Set "uiPort": 0 to disable.
     const uiPort = Number(this.config.uiPort != null ? this.config.uiPort : 8735);
-    if (uiPort > 0 && this.devices.size > 0 && !this._alarmServer) {
+    if (uiPort > 0 && !this._alarmServer) {
       this._alarmServer = startAlarmServer(this.log, this.devices, uiPort);
     }
   }

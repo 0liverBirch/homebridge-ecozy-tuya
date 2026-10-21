@@ -4,6 +4,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { getAlarms, setAlarms, DAY_NAMES, SOUNDS } = require('./alarms');
+const { scan } = require('./scan');
 
 const MAX_BODY_BYTES = 64 * 1024;
 
@@ -44,6 +45,15 @@ function startAlarmServer(log, devices, port) {
         if (!pageHtml) { sendJson(res, 500, { error: 'Editor page unavailable' }); return; }
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end(pageHtml);
+        return;
+      }
+
+      if (req.method === 'GET' && url.pathname === '/api/scan') {
+        // Discovery for first-time setup: Tuya devices announce their ID
+        // and IP by UDP broadcast. No local key is ever broadcast.
+        const secs = Number(url.searchParams.get('seconds')) || 12;
+        const devices = await scan(Math.max(2, Math.min(30, secs)));
+        sendJson(res, 200, { devices });
         return;
       }
 
