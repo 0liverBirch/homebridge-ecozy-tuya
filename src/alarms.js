@@ -184,18 +184,25 @@ async function getAlarms(device) {
   }));
 }
 
+const CONTENT_FIELDS = ['hour', 'minute', 'days', 'lightMode', 'brightness', 'sunriseMin', 'volume'];
+
 /**
- * Write alarm edits to a device. Reads the current blob first and refuses
- * to write if it cannot, then writes the enables that actually changed.
+ * Write alarm edits to a device. If any alarm carries content fields
+ * (time, days, ...), the blob is rewritten - reading the current blob
+ * first and refusing to write if that read fails. A call that only flips
+ * on/off states writes just those, without touching the blob.
  */
 async function setAlarms(device, alarms) {
-  const raw = await device.ensureValue(ALARM_DP);
-  if (raw === undefined) {
-    throw new Error(`[${device.name}] could not read the alarm settings from the clock.`);
+  const touchesBlob = (alarms || []).some((a) => CONTENT_FIELDS.some((f) => a[f] != null));
+  if (touchesBlob) {
+    const raw = await device.ensureValue(ALARM_DP);
+    if (raw === undefined) {
+      throw new Error(`[${device.name}] could not read the alarm settings from the clock.`);
+    }
+    const hex = encode(alarms, raw);
+    // TuyAPI carries raw datapoints as base64, matching how they arrive.
+    await device.set(ALARM_DP, hexToBase64(hex));
   }
-  const hex = encode(alarms, raw);
-  // TuyAPI carries raw datapoints as base64, matching how they arrive.
-  await device.set(ALARM_DP, hexToBase64(hex));
 
   for (const a of alarms || []) {
     const n = Number(a.index);

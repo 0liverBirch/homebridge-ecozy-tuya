@@ -14,7 +14,7 @@ One accessory for the clock, with services you choose in the config:
 
 ## Setting the alarms
 
-Open the plugin's settings in the Homebridge UI. Under the device fields there is an **Alarms** section: time, repeat days, brightness, sunrise lead-in, volume and light mode for all four alarms, saved straight to the clock through the plugin's existing connection.
+Open the plugin's settings in the Homebridge UI. Under the device fields there is an **Alarms** section laid out like the ecozy app: the four alarms as cards with big times and repeat summaries, and on/off switches that work straight away. Tap a card to edit its time, repeat days, volume and brightness (shown as percentages), the sunrise lead-in ("light up in advance") and the light effect, saved straight to the clock through the plugin's existing connection. The alarm sound and snooze settings are not editable here yet, and are never modified.
 
 The editor is also served on its own port (default **8735**) so you can bookmark it: `http://<your-homebridge-host>:8735/`. It has no login; it is meant for a trusted home LAN. Set `"uiPort": 0` in the config to turn it off.
 
