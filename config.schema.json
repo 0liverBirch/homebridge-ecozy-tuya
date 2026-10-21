@@ -1,0 +1,217 @@
+{
+  "pluginAlias": "EcozyTuya",
+  "pluginType": "platform",
+  "singular": true,
+  "headerDisplay": "Control ecozy / Tuya devices locally in HomeKit. Get the local key from a Tuya IoT cloud project, then run `npm run dump` to discover datapoints.",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Name",
+        "type": "string",
+        "default": "Ecozy Tuya",
+        "required": true
+      },
+      "devices": {
+        "type": "array",
+        "title": "Devices",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "Name",
+              "type": "string",
+              "required": true
+            },
+            "id": {
+              "title": "Device ID",
+              "description": "The sweeper_did value from the ecozy API response.",
+              "type": "string",
+              "required": true
+            },
+            "key": {
+              "title": "Local Key",
+              "type": "string",
+              "required": true
+            },
+            "ip": {
+              "title": "LAN IP (optional)",
+              "description": "Leave blank to auto-discover on the local network.",
+              "type": "string"
+            },
+            "version": {
+              "title": "Protocol Version",
+              "type": "string",
+              "default": "3.4",
+              "oneOf": [
+                {
+                  "title": "3.1",
+                  "enum": [
+                    "3.1"
+                  ]
+                },
+                {
+                  "title": "3.3",
+                  "enum": [
+                    "3.3"
+                  ]
+                },
+                {
+                  "title": "3.4",
+                  "enum": [
+                    "3.4"
+                  ]
+                },
+                {
+                  "title": "3.5",
+                  "enum": [
+                    "3.5"
+                  ]
+                }
+              ]
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            },
+            "services": {
+              "type": "array",
+              "title": "Services",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "title": "Type",
+                    "type": "string",
+                    "required": true,
+                    "oneOf": [
+                      {
+                        "title": "Light",
+                        "enum": [
+                          "lightbulb"
+                        ]
+                      },
+                      {
+                        "title": "Switch",
+                        "enum": [
+                          "switch"
+                        ]
+                      },
+                      {
+                        "title": "Outlet",
+                        "enum": [
+                          "outlet"
+                        ]
+                      },
+                      {
+                        "title": "Sleep Sound Picker",
+                        "enum": [
+                          "soundpicker"
+                        ]
+                      },
+                      {
+                        "title": "Bedtime Switch",
+                        "enum": [
+                          "bedtime"
+                        ]
+                      }
+                    ]
+                  },
+                  "name": {
+                    "title": "Name",
+                    "type": "string",
+                    "required": true
+                  },
+                  "dps": {
+                    "type": "object",
+                    "title": "Datapoint mapping",
+                    "properties": {
+                      "on": {
+                        "title": "On/Off DP",
+                        "type": "string"
+                      },
+                      "invert": {
+                        "title": "Invert on/off",
+                        "type": "boolean"
+                      },
+                      "brightness": {
+                        "title": "Brightness DP (light only)",
+                        "type": "string"
+                      },
+                      "brightnessScale": {
+                        "title": "Brightness scale (raw max)",
+                        "type": "integer",
+                        "default": 1000
+                      },
+                      "brightnessMin": {
+                        "title": "Brightness min raw",
+                        "type": "integer",
+                        "default": 10
+                      },
+                      "colorTemp": {
+                        "title": "Colour temp DP (light only)",
+                        "type": "string"
+                      },
+                      "colorTempScale": {
+                        "title": "Colour temp scale (raw max)",
+                        "type": "integer",
+                        "default": 1000
+                      },
+                      "colorTempInvert": {
+                        "title": "Invert colour temp",
+                        "type": "boolean"
+                      },
+                      "track": {
+                        "title": "Track DP (sound picker)",
+                        "type": "string"
+                      },
+                      "light": {
+                        "title": "Light DP (bedtime)",
+                        "type": "string"
+                      },
+                      "sleep": {
+                        "title": "Sleep DP (bedtime)",
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "sound": {
+                    "title": "Sound id (bedtime)",
+                    "description": "Sleep sound to start, 1-22. 2 = Flowing Water.",
+                    "type": "integer",
+                    "default": 2
+                  },
+                  "volume": {
+                    "title": "Volume (bedtime, optional)",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 16
+                  },
+                  "turnLightOff": {
+                    "title": "Turn the light off when switched off",
+                    "type": "boolean",
+                    "default": true
+                  }
+                }
+              }
+            },
+            "pollInterval": {
+              "title": "Poll interval (seconds)",
+              "description": "How often to refresh state from the clock. Keeps HomeKit in sync with changes made on the device itself.",
+              "type": "integer",
+              "default": 10,
+              "minimum": 5
+            }
+          }
+        }
+      },
+      "uiPort": {
+        "title": "Alarm editor port",
+        "type": "integer",
+        "default": 8735,
+        "minimum": 0,
+        "description": "Port for the alarm editor page served by the plugin (also embedded in the settings page). 0 disables it."
+      }
+    }
+  }
+}

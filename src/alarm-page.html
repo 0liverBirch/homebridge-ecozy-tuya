@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clock alarms</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 16px; background: #f2f2f7; color: #111; }
+  @media (prefers-color-scheme: dark) { body { background: #1c1c1e; color: #eee; } .card { background: #2c2c2e !important; } input, select { background: #3a3a3c; color: #eee; border-color: #555; } }
+  h1 { font-size: 20px; margin: 4px 0 2px; }
+  #status { font-size: 13px; opacity: .75; margin-bottom: 14px; }
+  .card { background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .card.off { opacity: .55; }
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
+  .row label { font-size: 13px; min-width: 86px; opacity: .8; }
+  .title { font-weight: 600; font-size: 16px; }
+  input[type="time"] { font-size: 17px; padding: 4px 6px; }
+  input[type="range"] { flex: 1; min-width: 120px; }
+  input, select { border: 1px solid #ccc; border-radius: 6px; padding: 5px 7px; font-size: 14px; }
+  .days { display: flex; gap: 6px; }
+  .day { border: 1px solid #bbb; background: transparent; color: inherit; border-radius: 999px; padding: 4px 10px; font-size: 13px; cursor: pointer; }
+  .day.on { background: #0a84ff; border-color: #0a84ff; color: #fff; }
+  .switch { margin-left: auto; transform: scale(1.25); }
+  #save { background: #0a84ff; color: #fff; border: 0; border-radius: 10px; font-size: 16px; padding: 11px 22px; cursor: pointer; width: 100%; }
+  #save:disabled { opacity: .5; }
+  #msg { text-align: center; font-size: 14px; min-height: 20px; margin-top: 10px; }
+  .val { font-size: 13px; min-width: 30px; text-align: right; }
+</style>
+</head>
+<body>
+<h1>Alarms</h1>
+<div id="status">Loading…</div>
+<div id="alarms"></div>
+<button id="save" disabled>Save to clock</button>
+<div id="msg"></div>
+
+<script>
+'use strict';
+let state = null; // { device, connected, days, sounds, alarms }
+
+const $status = document.getElementById('status');
+const $alarms = document.getElementById('alarms');
+const $save = document.getElementById('save');
+const $msg = document.getElementById('msg');
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+function render() {
+  $status.textContent = state.connected
+    ? `${state.device} · connected`
+    : `${state.device} · not connected - showing last known values`;
+  $alarms.innerHTML = '';
+  for (const a of state.alarms) {
+    const card = el('div', 'card' + (a.enabled ? '' : ' off'));
+
+    const head = el('div', 'row');
+    head.appendChild(el('span', 'title', `Alarm ${a.index}`));
+    const t = document.createElement('input');
+    t.type = 'time'; t.value = a.time;
+    t.onchange = () => {
+      const [h, m] = t.value.split(':').map(Number);
+      if (Number.isFinite(h)) a.hour = h;
+      if (Number.isFinite(m)) a.minute = m;
+    };
+    head.appendChild(t);
+    const sw = document.createElement('input');
+    sw.type = 'checkbox'; sw.className = 'switch'; sw.checked = Boolean(a.enabled);
+    sw.onchange = () => { a.enabled = sw.checked; card.classList.toggle('off', !sw.checked); };
+    head.appendChild(sw);
+    card.appendChild(head);
+
+    const daysRow = el('div', 'row');
+    daysRow.appendChild(el('label', null, 'Repeat'));
+    const days = el('div', 'days');
+    for (const d of state.days) {
+      const b = el('button', 'day' + (a.days.includes(d) ? ' on' : ''), d);
+      b.type = 'button';
+      b.onclick = () => {
+        const i = a.days.indexOf(d);
+        if (i >= 0) a.days.splice(i, 1); else a.days.push(d);
+        b.classList.toggle('on');
+      };
+      days.appendChild(b);
+    }
+    daysRow.appendChild(days);
+    daysRow.appendChild(el('span', null, a.days.length ? '' : ''));
+    card.appendChild(daysRow);
+    const once = el('div', 'row');
+    once.appendChild(el('label', null, ''));
+    once.appendChild(el('span', null, 'No days selected = one-off alarm'));
+    once.style.fontSize = '12px'; once.style.opacity = '.65'; once.style.margin = '0 0 2px';
+    card.appendChild(once);
+
+    const mkRange = (label, min, max, get, set, suffix) => {
+      const row = el('div', 'row');
+      row.appendChild(el('label', null, label));
+      const r = document.createElement('input');
+      r.type = 'range'; r.min = min; r.max = max; r.value = get();
+      const v = el('span', 'val', `${get()}${suffix || ''}`);
+      r.oninput = () => { set(Number(r.value)); v.textContent = `${r.value}${suffix || ''}`; };
+      row.appendChild(r); row.appendChild(v);
+      return row;
+    };
+    card.appendChild(mkRange('Brightness', 10, 200, () => a.brightness, (v) => { a.brightness = v; }));
+    card.appendChild(mkRange('Sunrise', 0, 60, () => a.sunriseMin, (v) => { a.sunriseMin = v; }, ' min'));
+    card.appendChild(mkRange('Volume', 1, 16, () => a.volume, (v) => { a.volume = v; }));
+
+    const modeRow = el('div', 'row');
+    modeRow.appendChild(el('label', null, 'Light mode'));
+    const sel = document.createElement('select');
+    for (let i = 1; i <= 19; i++) {
+      const o = el('option', null, `Mode ${i}`);
+      o.value = i;
+      if (i === a.lightMode) o.selected = true;
+      sel.appendChild(o);
+    }
+    sel.onchange = () => { a.lightMode = Number(sel.value); };
+    modeRow.appendChild(sel);
+    card.appendChild(modeRow);
+
+    $alarms.appendChild(card);
+  }
+  $save.disabled = false;
+}
+
+async function load() {
+  try {
+    const r = await fetch('api/alarms');
+    if (!r.ok) throw new Error((await r.json()).error || r.statusText);
+    state = await r.json();
+    render();
+  } catch (e) {
+    $status.textContent = `Could not load alarms: ${e.message}`;
+  }
+}
+
+$save.onclick = async () => {
+  $save.disabled = true; $msg.textContent = 'Saving…';
+  try {
+    const r = await fetch('api/alarms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ alarms: state.alarms }),
+    });
+    if (!r.ok) throw new Error((await r.json()).error || r.statusText);
+    state = await r.json();
+    render();
+    $msg.textContent = 'Saved to the clock.';
+  } catch (e) {
+    $msg.textContent = `Save failed: ${e.message}`;
+  } finally {
+    $save.disabled = false;
+  }
+};
+
+load();
+</script>
+</body>
+</html>

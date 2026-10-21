@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ecozy Tuya settings</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 4px 2px 20px; }
+  h2 { font-size: 17px; margin: 18px 0 8px; }
+  p.note { font-size: 13px; opacity: .75; margin: 4px 0 10px; }
+  .grid { display: grid; grid-template-columns: 130px 1fr; gap: 8px 10px; align-items: center; max-width: 560px; }
+  .grid label { font-size: 13px; }
+  .grid input { padding: 6px 8px; font-size: 14px; border: 1px solid #bbb; border-radius: 6px; width: 100%; box-sizing: border-box; }
+  button.primary { background: #0a84ff; color: #fff; border: 0; border-radius: 8px; padding: 9px 18px; font-size: 14px; cursor: pointer; margin-top: 12px; }
+  #saved { font-size: 13px; margin-left: 10px; }
+  iframe { width: 100%; height: 760px; border: 1px solid #ccc; border-radius: 10px; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<h2>Device</h2>
+<p class="note">Your clock's details live here, in the Homebridge config, and nowhere else.
+The device ID and local key never leave this page. Services for the device are edited in the
+raw config (this form preserves them untouched).</p>
+<div class="grid" id="form">
+  <label for="f-name">Name</label><input id="f-name" autocomplete="off">
+  <label for="f-id">Device ID</label><input id="f-id" autocomplete="off">
+  <label for="f-key">Local key</label><input id="f-key" autocomplete="off">
+  <label for="f-ip">IP address</label><input id="f-ip" autocomplete="off" placeholder="Optional, blank = auto-discover">
+  <label for="f-version">Protocol</label><input id="f-version" autocomplete="off" placeholder="3.4">
+  <label for="f-model">Model</label><input id="f-model" autocomplete="off" placeholder="ecozy E80S">
+  <label for="f-poll">Poll seconds</label><input id="f-poll" type="number" min="5" autocomplete="off">
+  <label for="f-uiport">Alarm page port</label><input id="f-uiport" type="number" min="0" autocomplete="off">
+</div>
+<button class="primary" id="save">Save device settings</button><span id="saved"></span>
+<p class="note">Saving writes the config; restart Homebridge for device changes to take effect.</p>
+
+<h2>Alarms</h2>
+<p class="note">Set the four alarm times on the clock itself. This editor is served by the plugin
+through its existing connection to the clock, so nothing goes through the cloud.
+<a id="open-editor" href="#" target="_blank" rel="noopener">Open the alarm editor in a new tab</a> if it does not load below.</p>
+<iframe id="editor" title="Alarm editor"></iframe>
+
+<script>
+'use strict';
+const hb = window.homebridgePluginUi || null;
+const DEFAULT_PORT = 8735;
+
+const fields = ['name', 'id', 'key', 'ip', 'version', 'model'];
+let configBlock = null;   // the platform config object, preserved whole
+let device = null;        // configBlock.devices[0]
+
+function editorUrl(port) {
+  return `http://${window.location.hostname}:${port || DEFAULT_PORT}/`;
+}
+
+function pointEditor(port) {
+  const url = editorUrl(port);
+  document.getElementById('editor').src = url;
+  document.getElementById('open-editor').href = url;
+}
+
+async function init() {
+  pointEditor(DEFAULT_PORT);
+  if (!hb) {
+    document.getElementById('form').classList.add('hidden');
+    document.getElementById('save').classList.add('hidden');
+    return;
+  }
+  try {
+    const blocks = await hb.getPluginConfig();
+    configBlock = (blocks && blocks[0]) || { platform: 'EcozyTuya', name: 'Ecozy Tuya', devices: [] };
+    if (!Array.isArray(configBlock.devices) || !configBlock.devices.length) {
+      configBlock.devices = [{}];
+    }
+    device = configBlock.devices[0];
+    for (const f of fields) {
+      document.getElementById(`f-${f}`).value = device[f] != null ? device[f] : '';
+    }
+    document.getElementById('f-poll').value = device.pollInterval != null ? device.pollInterval : 10;
+    const uiPort = configBlock.uiPort != null ? configBlock.uiPort : DEFAULT_PORT;
+    document.getElementById('f-uiport').value = uiPort;
+    pointEditor(uiPort);
+  } catch (e) {
+    document.getElementById('saved').textContent = `Could not load config: ${e.message}`;
+  }
+}
+
+document.getElementById('save').onclick = async () => {
+  if (!hb || !configBlock || !device) return;
+  for (const f of fields) {
+    const v = document.getElementById(`f-${f}`).value.trim();
+    if (v) device[f] = v; else delete device[f];
+  }
+  const poll = Number(document.getElementById('f-poll').value);
+  if (Number.isFinite(poll) && poll >= 5) device.pollInterval = poll;
+  const uiPort = Number(document.getElementById('f-uiport').value);
+  if (Number.isFinite(uiPort) && uiPort >= 0) configBlock.uiPort = uiPort;
+  try {
+    await hb.updatePluginConfig([configBlock]);
+    await hb.savePluginConfig();
+    document.getElementById('saved').textContent = 'Saved. Restart Homebridge to apply.';
+    pointEditor(configBlock.uiPort);
+  } catch (e) {
+    document.getElementById('saved').textContent = `Save failed: ${e.message}`;
+  }
+};
+
+init();
+</script>
+</body>
+</html>

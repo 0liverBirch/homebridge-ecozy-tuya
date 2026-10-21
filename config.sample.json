@@ -1,0 +1,93 @@
+{
+  "_comment": "Copy this platform block into the 'platforms' array of your Homebridge config.json, then fill in your device ID and local key (or enter them later on the plugin's settings page).",
+  "platforms": [
+    {
+      "platform": "EcozyTuya",
+      "name": "Ecozy Tuya",
+      "devices": [
+        {
+          "name": "Bedroom Clock",
+          "id": "YOUR_DEVICE_ID",
+          "key": "YOUR_LOCAL_KEY",
+          "ip": "",
+          "version": "3.4",
+          "model": "ecozy E80S",
+          "services": [
+            {
+              "type": "lightbulb",
+              "name": "Bedside Light",
+              "dps": {
+                "on": "101",
+                "brightness": "102",
+                "brightnessScale": 200,
+                "brightnessMin": 10,
+                "colour": "110",
+                "colourMode": {
+                  "dp": "111",
+                  "value": "17"
+                }
+              }
+            },
+            {
+              "type": "switch",
+              "name": "Sleep",
+              "dps": {
+                "on": "126"
+              }
+            },
+            {
+              "type": "switch",
+              "name": "Alarm 1",
+              "dps": {
+                "on": "114"
+              }
+            },
+            {
+              "type": "switch",
+              "name": "Alarm 2",
+              "dps": {
+                "on": "122"
+              }
+            },
+            {
+              "type": "switch",
+              "name": "Alarm 3",
+              "dps": {
+                "on": "123"
+              }
+            },
+            {
+              "type": "switch",
+              "name": "Alarm 4",
+              "dps": {
+                "on": "124"
+              }
+            },
+            {
+              "type": "soundpicker",
+              "name": "Sleep Sounds",
+              "dps": {
+                "track": "113",
+                "on": "126"
+              }
+            },
+            {
+              "type": "bedtime",
+              "name": "Bedtime",
+              "dps": {
+                "light": "101",
+                "track": "113",
+                "sleep": "126"
+              },
+              "sound": 2,
+              "turnLightOff": true,
+              "volume": 2
+            }
+          ],
+          "pollInterval": 10
+        }
+      ],
+      "uiPort": 8735
+    }
+  ]
+}
