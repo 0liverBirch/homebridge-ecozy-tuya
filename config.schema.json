@@ -1,6 +1,7 @@
 {
   "pluginAlias": "EcozyTuya",
   "pluginType": "platform",
+  "customUi": true,
   "singular": true,
   "headerDisplay": "Control ecozy / Tuya devices locally in HomeKit. Get the local key from a Tuya IoT cloud project, then run `npm run dump` to discover datapoints.",
   "schema": {

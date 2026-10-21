@@ -1,7 +1,7 @@
 {
   "name": "homebridge-ecozy-tuya",
   "displayName": "Homebridge Ecozy Tuya",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Control ecozy / Tuya-based devices (e.g. the ecozy E80S sunrise alarm clock) locally in HomeKit via Homebridge, with alarm times settable from the plugin settings.",
   "license": "MIT",
   "author": "Oliver Birch",
