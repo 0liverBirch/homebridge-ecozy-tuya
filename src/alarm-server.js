@@ -60,7 +60,8 @@ function startAlarmServer(log, devices, port) {
       if (url.pathname === '/api/health') {
         sendJson(res, 200, {
           ok: true,
-          devices: [...devices.values()].map((d) => ({
+          devices: [...devices.entries()].map(([id, d]) => ({
+            id,
             name: d.name,
             connected: d.connected,
           })),

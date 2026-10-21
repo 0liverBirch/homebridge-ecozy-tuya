@@ -53,12 +53,20 @@
   #toast { text-align: center; font-size: 14px; min-height: 20px; margin-top: 12px; color: var(--dim); }
   .note { font-size: 13px; color: var(--dim); line-height: 1.45; margin-top: 18px; }
   .hidden { display: none; }
+  #device-bar { margin: 10px 0 6px; display: flex; align-items: center; gap: 10px; }
+  #device-bar.hidden { display: none; }
+  #device-bar label { font-size: 14px; color: var(--dim); }
+  #device-bar select { font-size: 15.5px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
 </style>
 </head>
 <body>
 
 <div id="list-view">
   <h1>Alarms</h1>
+  <div id="device-bar" class="hidden">
+    <label for="device-select">Clock</label>
+    <select id="device-select"></select>
+  </div>
   <div id="status">Loading…</div>
   <div id="alarms"></div>
   <p class="note">Tap an alarm to change its time and settings. The on/off switches work straight away.
@@ -123,6 +131,7 @@ const PRESETS = [
 ];
 let state = null;      // last data from the clock
 let editing = null;    // working copy of the alarm being edited
+let currentDeviceId = ''; // Tuya device id when several clocks are configured
 
 const $ = (id) => document.getElementById(id);
 
@@ -147,7 +156,8 @@ const brightToPct = (b) => Math.round(b / 2);                    // raw 10..200
 const pctToBright = (p) => Math.max(10, Math.min(200, Math.round(p * 2)));
 
 async function api(method, body) {
-  const r = await fetch('api/alarms', {
+  const url = 'api/alarms' + (currentDeviceId ? `?device=${encodeURIComponent(currentDeviceId)}` : '');
+  const r = await fetch(url, {
     method,
     headers: body ? { 'Content-Type': 'application/json' } : undefined,
     body: body ? JSON.stringify(body) : undefined,
@@ -323,10 +333,37 @@ $('save').onclick = async () => {
   }
 };
 
+async function loadAlarms() {
+  state = await api('GET');
+  renderList();
+}
+
 (async () => {
+  // With several clocks configured, offer a switcher. The health endpoint
+  // lists them; the alarms API takes ?device=<tuya id>.
   try {
-    state = await api('GET');
-    renderList();
+    const h = await (await fetch('api/health')).json();
+    if (h.devices && h.devices.length > 1) {
+      const sel = $('device-select');
+      for (const d of h.devices) {
+        const o = document.createElement('option');
+        o.value = d.id || '';
+        o.textContent = d.name;
+        sel.appendChild(o);
+      }
+      currentDeviceId = sel.value;
+      sel.onchange = async () => {
+        currentDeviceId = sel.value;
+        $('edit-view').classList.add('hidden');
+        $('list-view').classList.remove('hidden');
+        $('status').textContent = 'Loading…';
+        try { await loadAlarms(); } catch (err) { $('status').textContent = `Could not load alarms: ${err.message}`; }
+      };
+      $('device-bar').classList.remove('hidden');
+    }
+  } catch (e) { /* single clock or older server: no switcher needed */ }
+  try {
+    await loadAlarms();
   } catch (err) {
     $('status').textContent = `Could not load alarms: ${err.message}`;
   }

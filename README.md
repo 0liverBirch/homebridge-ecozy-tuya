@@ -20,6 +20,10 @@ The editor is also served on its own port (default **8735**) so you can bookmark
 
 Alarm times live in datapoint 127, a packed 56-byte value (4 alarms × 14 bytes). The plugin only ever rewrites the bytes it understands — hour, minute, repeat days, light mode, brightness, sunrise, volume — and carries every other byte over from the clock untouched. If it cannot read the current value, it refuses to write rather than guess.
 
+## Several clocks
+
+One plugin instance runs as many clocks as you add. Each clock has its own device ID, local key and IP address; add them all on the settings page (the scan helps: "Use this device" fills in a found clock, or adds a new entry for it). In HomeKit each clock appears under its own name with its own accessories. The alarm editor shows a clock switcher at the top when more than one clock is configured.
+
 ## Install
 
 From the Homebridge UI: Plugins → search **homebridge-ecozy-tuya** → Install. Or from a terminal:
