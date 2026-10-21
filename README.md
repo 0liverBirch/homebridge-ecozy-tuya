@@ -69,6 +69,22 @@ Note: shared devices (shown as `sweeper_is_share: 1`) may hide the key; linking 
 | 126 | Sleep function on/off |
 | 127 | Alarm settings (packed, handled by the alarm editor) |
 
+## Discovering datapoints on another device
+
+The config's datapoint mapping is specific to the E80S. For a different Tuya device, the plugin ships a dump tool:
+
+```bash
+# from the machine running Homebridge, with Homebridge stopped
+cd /var/lib/homebridge
+./node_modules/.bin/ecozy-tuya-dump                # reads your Homebridge config automatically
+./node_modules/.bin/ecozy-tuya-dump --once         # one snapshot, no watching
+./node_modules/.bin/ecozy-tuya-dump --id <id> --key <localKey> --ip <ip> --version 3.4
+```
+
+It prints every datapoint with its current value (decoding the sleep track and the alarm blob on E80S-class devices), then watches for 30 seconds (`--seconds` to change) and prints whatever changes. Toggle one function at a time on the device or in its app and note which datapoint moves; that mapping is what goes in the config's `services` list. `--json <file>` saves the raw snapshot. Your local key is used to connect and is never printed.
+
+Stop Homebridge first: the device allows one local connection, and the tool and the plugin cannot share it.
+
 ## How it works, and why it is not flaky
 
 - **One connection.** Tuya devices accept a single local connection, so every service shares one socket and all traffic is serialised through one queue.
@@ -81,7 +97,7 @@ Note: shared devices (shown as `sweeper_is_share: 1`) may hide the key; linking 
 
 - Because of the one-connection rule, do not run other local Tuya tools (dump scripts, other plugins) against the clock at the same time as Homebridge.
 - The alarm editor page has no authentication. Keep it on your home LAN, or disable it with `"uiPort": 0` and use the ecozy app for alarm times.
-- Debug and discovery tools from development are not included in this package.
+- The Python probe scripts from early development are not included; the datapoint dump tool below supersedes them.
 
 ## Licence
 
